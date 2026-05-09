@@ -563,14 +563,22 @@ await fetch('/api/create-checkout-session', {
 
                     <div>
                         <h4 class="text-sm font-semibold mb-2">2. Backend — create subscription session (Node.js)</h4>
-                        <pre class="mono text-[12px] leading-relaxed p-4 rounded-xl bg-slate-950 text-slate-100 overflow-x-auto">const session = await stripe.checkout.sessions.create({
+                        <pre class="mono text-[12px] leading-relaxed p-4 rounded-xl bg-slate-950 text-slate-100 overflow-x-auto">
+const session = await stripe.checkout.sessions.create({
   mode: 'subscription',
-  line_items: req.body.line_items,
+  payment_method_types: ['card', 'us_bank_account'], // ← ACH enabled
+  line_items: req.body.items, // [{price: 'price_xxx', quantity: 1}]
   success_url: 'https://www.alleghenyairfoundation.info/success?session_id={CHECKOUT_SESSION_ID}',
   cancel_url: 'https://www.alleghenyairfoundation.info/cancel',
-  allow_promotion_codes: true,
-  billing_address_collection: 'auto',
-  tax_id_collection: { enabled: true },
+  // Required for ACH
+  payment_method_options: {
+    us_bank_account: {
+      financial_connections: { permissions: ['payment_method'] },
+      verification_method: 'instant'
+    }
+  },
+  // Collect billing address for ACH mandate
+  billing_address_collection: 'required',
 });
 
 // Return { url: session.url }</pre>
